@@ -16,7 +16,7 @@ where
 
 impl<'a, I: 'a, O1, O2, E, F, P> Parser<'a, I, E> for Map<F, P>
 where
-    F: Fn(O1) -> O2,
+    F: FnMut(O1) -> O2,
     P: Parser<'a, I, E, Output = O1>,
     I: Clone,
 {
@@ -28,7 +28,7 @@ where
 
 impl<'a, I: 'a, O: 'a, E, F> Parser<'a, I, E> for F
 where
-    F: Fn(I) -> ParseResult<I, O, E>,
+    F: FnMut(I) -> ParseResult<I, O, E>,
     I: Clone,
 {
     type Output = O;
@@ -68,10 +68,13 @@ where
     fn parse(&mut self, input: I) -> ParseResult<I, Vec<P::Output>, ParseError<'a>> {
         let mut ans: Vec<P::Output> = vec![];
         let mut i = input;
-        let mut res;
         loop {
-            (i, res) = self.parser.parse(i)?;
-            ans.push(res);
+            if let Ok((ipt, res)) = self.parser.parse(i.clone()) {
+                ans.push(res);
+                i = ipt;
+            } else {
+                break;
+            }
             if let Ok((next, _)) = self.separator.parse(i.clone()) {
                 i = next;
             } else {
@@ -126,6 +129,20 @@ where
     }
 }
 
+pub fn opt<'a, I: 'a, O, E, F>(mut f: F) -> impl FnMut(I) -> ParseResult<I, Option<O>, E>
+where
+    I: Clone,
+    F: Parser<'a, I, E, Output = O>,
+{
+    move |input: I| {
+        let i = input.clone();
+        match f.parse(input) {
+            Ok((i, o)) => Ok((i, Some(o))),
+            Err(_) => Ok((i, None)),
+        }
+    }
+}
+
 pub fn sequence<'a>(matcher: &'a str) -> impl Parser<'a, &'a str, ParseError, Output = &'a str> {
     move |input: &'a str| {
         if input.is_empty() {
@@ -149,18 +166,13 @@ pub fn take_while<'a, P>(predicate: P) -> impl Parser<'a, &'a str, ParseError<'a
 where
     P: Fn(char) -> bool,
 {
-    move |input: &'a str| {
-        if input.is_empty() {
-            return Err((0, "empty sequence"));
+    move |input: &'a str| match input.chars().position(|c| !(predicate)(c)) {
+        Some(position) => {
+            let (parsed, remainder) = input.split_at(position);
+            return Ok((remainder, parsed));
         }
-        match input.chars().position(|c| (predicate)(c)) {
-            Some(position) => {
-                let (parsed, remainder) = input.split_at(position);
-                return Ok((remainder, parsed));
-            }
-            None => {
-                return Ok(("", input));
-            }
+        None => {
+            return Ok((input, ""));
         }
     }
 }

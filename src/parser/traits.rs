@@ -56,17 +56,22 @@ where
     Sep { parser, separator }
 }
 
-pub fn wrapped<'a, I: 'a, O: 'a, L, P, R>(left: L, parser: P, right: R) -> Wrap<L, P, R>
+pub fn wrapped<'a, I: 'a, O: 'a, L, P, R>(
+    mut left: L,
+    mut parser: P,
+    mut right: R,
+) -> impl FnMut(I) -> ParseResult<I, O, ParseError<'a>>
 where
     L: Parser<'a, I, ParseError<'a>>,
     P: Parser<'a, I, ParseError<'a>, Output = O>,
     R: Parser<'a, I, ParseError<'a>>,
     I: Clone,
 {
-    Wrap {
-        left,
-        parser,
-        right,
+    move |input: I| {
+        let (input, _) = left.parse(input)?;
+        let (input, res) = parser.parse(input)?;
+        let (input, _) = right.parse(input)?;
+        return Ok((input, res));
     }
 }
 
