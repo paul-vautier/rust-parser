@@ -1,15 +1,28 @@
-pub type ParseError<'a> = (u32, &'a str);
-pub type ParseResult<I, O, E> = Result<(I, O), E>;
+use super::errors::ParserError;
 
-pub trait Parser<'a, I: 'a, ParseError>
-where
-    I: Clone,
-{
+pub type ParseResult<I: Input, O> = Result<(I, O), ParserError<I>>;
+
+pub trait Input: Clone {
+    fn to_string_value(&self) -> String;
+
+    fn input_len(&self) -> usize;
+}
+
+impl Input for &str {
+    fn to_string_value(&self) -> String {
+        self.to_string()
+    }
+
+    fn input_len(&self) -> usize {
+        self.len()
+    }
+}
+pub trait Parser<I: Input> {
     type Output;
 
     fn and<G>(self, parser: G) -> And<Self, G>
     where
-        G: Parser<'a, I, ParseError>,
+        G: Parser<I>,
         Self: Sized,
     {
         And {
@@ -20,7 +33,7 @@ where
 
     fn or<G>(self, parser: G) -> Or<Self, G>
     where
-        G: Parser<'a, I, ParseError>,
+        G: Parser<I>,
         Self: Sized,
     {
         Or {
@@ -44,28 +57,28 @@ where
         Many { parser: self }
     }
 
-    fn parse(&mut self, input: I) -> ParseResult<I, Self::Output, ParseError>;
+    fn parse(&mut self, input: I) -> ParseResult<I, Self::Output>;
 }
 
-pub fn sep_by<'a, I: 'a, O: 'a, P, S>(parser: P, separator: S) -> Sep<P, S>
+pub fn sep_by<'a, I, O, P, S>(parser: P, separator: S) -> Sep<P, S>
 where
-    P: Parser<'a, I, ParseError<'a>, Output = O>,
-    S: Parser<'a, I, ParseError<'a>>,
-    I: Clone,
+    I: Input,
+    P: Parser<I, Output = O>,
+    S: Parser<I>,
 {
     Sep { parser, separator }
 }
 
-pub fn wrapped<'a, I: 'a, O: 'a, L, P, R>(
+pub fn wrapped<I, O, L, P, R>(
     mut left: L,
     mut parser: P,
     mut right: R,
-) -> impl FnMut(I) -> ParseResult<I, O, ParseError<'a>>
+) -> impl FnMut(I) -> ParseResult<I, O>
 where
-    L: Parser<'a, I, ParseError<'a>>,
-    P: Parser<'a, I, ParseError<'a>, Output = O>,
-    R: Parser<'a, I, ParseError<'a>>,
-    I: Clone,
+    L: Parser<I>,
+    P: Parser<I, Output = O>,
+    R: Parser<I>,
+    I: Input,
 {
     move |input: I| {
         let (input, _) = left.parse(input)?;
@@ -75,11 +88,25 @@ where
     }
 }
 
+pub fn opt<I, O, F>(mut f: F) -> impl FnMut(I) -> ParseResult<I, Option<O>>
+where
+    I: Input,
+    F: Parser<I, Output = O>,
+{
+    move |input: I| {
+        let i = input.clone();
+        match f.parse(input) {
+            Ok((i, o)) => Ok((i, Some(o))),
+            Err(_) => Ok((i, None)),
+        }
+    }
+}
+
 pub fn discard<'a, I: 'a, O: 'a, D, P>(discard: D, parser: P) -> Discard<D, P>
 where
-    P: Parser<'a, I, ParseError<'a>, Output = O>,
-    D: Parser<'a, I, ParseError<'a>>,
-    I: Clone,
+    P: Parser<I, Output = O>,
+    D: Parser<I>,
+    I: Input,
 {
     Discard { discard, parser }
 }
@@ -91,12 +118,6 @@ pub struct Many<P> {
 pub struct Sep<P, S> {
     pub(crate) parser: P,
     pub(crate) separator: S,
-}
-
-pub struct Wrap<L, P, R> {
-    pub(crate) left: L,
-    pub(crate) parser: P,
-    pub(crate) right: R,
 }
 
 pub struct And<F, S> {

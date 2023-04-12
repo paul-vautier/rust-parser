@@ -6,5 +6,8 @@ use crate::parser::{
     traits::{sep_by, wrapped, Parser},
 };
 fn main() {
-    println!("{:?}", json_value("[true, false, [false]]"));
+    println!(
+        "{:?}",
+        json_value("[true, false, [false], \" \\\\abcdef\"]")
+    );
 }
