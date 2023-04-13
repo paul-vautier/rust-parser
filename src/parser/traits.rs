@@ -1,6 +1,6 @@
 use super::errors::ParserError;
 
-pub type ParseResult<I: Input, O> = Result<(I, O), ParserError<I>>;
+pub type ParseResult<I, O> = Result<(I, O), ParserError<I>>;
 
 pub trait Input: Clone {
     fn to_string_value(&self) -> String;
@@ -17,6 +17,7 @@ impl Input for &str {
         self.len()
     }
 }
+
 pub trait Parser<I: Input> {
     type Output;
 
@@ -128,6 +129,14 @@ where
             Err(_) => Ok((i, None)),
         }
     }
+}
+
+pub fn value<V: Clone, I, O, F>(v: V, mut f: F) -> impl FnMut(I) -> ParseResult<I, V>
+where
+    I: Input,
+    F: Parser<I, Output = O>,
+{
+    move |input: I| f.parse(input).map(|(i, _)| (i, v.clone()))
 }
 
 pub fn discard<'a, I: 'a, O: 'a, D, P>(discard: D, parser: P) -> Discard<D, P>

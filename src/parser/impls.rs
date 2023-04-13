@@ -49,7 +49,6 @@ where
 {
     type Output = Vec<P::Output>;
     fn parse(&mut self, input: I) -> ParseResult<I, Vec<P::Output>> {
-        println!("many {}", input.to_string_value());
         if input.input_len() == 0 {
             return Err(ParserError::new(
                 0,
@@ -66,7 +65,6 @@ where
             }
             match self.parser.parse(ipt.clone()) {
                 Ok((i, res)) => {
-                    println!("parsed many {}", ipt.to_string_value());
                     if i.input_len() == ipt.input_len() {
                         break;
                     }
@@ -144,7 +142,6 @@ where
 
 pub fn sequence<'a>(matcher: &'a str) -> impl Parser<&'a str, Output = &'a str> {
     move |input: &'a str| {
-        println!("attempting to parse {} for {}", matcher, input);
         if input.is_empty() {
             return Err(ParserError::new(
                 0,

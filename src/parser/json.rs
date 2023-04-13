@@ -1,8 +1,8 @@
 use std::{collections::HashMap, iter::Flatten};
 
 use super::{
-    impls::{none_of, sequence, take_while, ws},
-    traits::{discard, opt, parse_if, sep_by, wrapped, FlattenTuple, ParseResult, Parser},
+    impls::{any, none_of, sequence, take_while, ws},
+    traits::{discard, opt, parse_if, sep_by, value, wrapped, FlattenTuple, ParseResult, Parser},
 };
 
 #[derive(Debug)]
@@ -19,7 +19,7 @@ pub fn json_object<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
     wrapped(
         sequence("{"),
         sep_by(json_pair, sequence(",")),
-        sequence("}"),
+        discard(ws(), sequence("}")),
     )
     .map(Vec::into_iter)
     .map(Iterator::collect::<HashMap<String, JsonValue>>)
@@ -72,7 +72,8 @@ pub fn json_value<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
         null.or(boolean)
             .or(array)
             .or(json_object)
-            .or(string.map(JsonValue::String)),
+            .or(string.map(JsonValue::String))
+            .or(json_number),
     )
     .parse(input)
 }
@@ -80,7 +81,7 @@ pub fn json_value<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
 pub fn array<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
     wrapped(
         sequence("["),
-        sep_by(json_value, sequence(",")).map(JsonValue::Array),
+        wrapped(ws(), sep_by(json_value, sequence(",")), ws()).map(JsonValue::Array),
         sequence("]"),
     )(input)
 }
@@ -92,25 +93,47 @@ pub fn boolean<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
         .parse(input)
 }
 
+#[rustfmt::skip]
 pub fn json_number<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
     opt(sequence("-"))
         .map(|opt| if opt.is_some() { -1 } else { 1 })
-        .and(
-            sequence("0")
-                .or(digits)
-                .map(str::parse::<u32>)
-                .map(Result::unwrap),
-        )
-        .and(parse_if(sequence("."), digits).map(|opt| {
-            opt.map(|double_str| format!("0.{}", double_str).parse::<f32>())
-                .map(Result::unwrap)
-                .unwrap_or(0.0)
-        }))
-        .map(FlattenTuple::into_flattened)
-        .map(|_| JsonValue::Null)
+        .and(integral_part)
+        .and(decimal_part)
+        .and(exponent)
+        .map(|(((sign, integral), decimal), exponent)| JsonValue::Number(calculate_number(sign, integral, decimal, exponent)))
         .parse(input)
 }
 
+fn calculate_number(sign: i64, integral: u64, decimal: f64, exponent: i32) -> f64 {
+    (sign as f64 * (integral as f64 + decimal)).powi(exponent)
+}
+#[rustfmt::skip]
+fn integral_part<'a>(input: &'a str) -> ParseResult<&'a str, u64> {
+    sequence("0")
+                .or(digits)
+                .map(str::parse::<u64>)
+                .map(Result::unwrap).parse(input)
+}
+
+#[rustfmt::skip]
+fn decimal_part<'a>(input: &'a str) -> ParseResult<&'a str, f64> {
+    parse_if(sequence("."), digits).map(|opt| {
+        opt.map(|double_str| format!("0.{}", double_str).parse::<f64>())
+            .map(Result::unwrap)
+            .unwrap_or(0.0)
+    }).parse(input)
+}
+
+#[rustfmt::skip]
+fn exponent<'a>(input: &'a str) -> ParseResult<&'a str, i32> {
+    opt(discard(any("eE"), 
+    opt(
+            value(-1, sequence("-")).or(value(1 as i32, sequence("+")
+            ))).map(|opt| opt.unwrap_or(1))
+        ).and(digits).map(|(a, b)| a * b.parse::<i32>().unwrap())
+    ).map(|opt| opt.unwrap_or(1))
+    .parse(input)
+}
 pub fn digits<'a>(input: &'a str) -> ParseResult<&'a str, &'a str> {
     take_while(|c| c.is_digit(10)).parse(input)
 }
