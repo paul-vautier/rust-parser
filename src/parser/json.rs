@@ -15,6 +15,24 @@ pub enum JsonValue {
     Null,
 }
 
+pub fn json_object<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
+    wrapped(sequence("{"), json_pair.many(), sequence("}"))
+        .map(Vec::into_iter)
+        .map(Iterator::collect::<HashMap<String, JsonValue>>)
+        .map(JsonValue::Object)
+        .parse(input)
+}
+
+pub fn json_pair<'a>(input: &'a str) -> ParseResult<&'a str, (String, JsonValue)> {
+    wrapped(
+        ws(),
+        string
+            .map(String::from)
+            .and(discard(wrapped(ws(), sequence(":"), ws()), json_value)),
+        ws(),
+    )(input)
+}
+
 pub fn null<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
     sequence("null").map(|_| JsonValue::Null).parse(input)
 }
@@ -23,30 +41,36 @@ fn escaped<'a>(input: &'a str) -> ParseResult<&'a str, &'a str> {
     sequence("\\\\")
         .map(|_| "\\")
         .or(sequence("\\\"").map(|_| "\""))
-        .or(sequence("\\n").map(|_| "\\n"))
-        .or(sequence("\\t").map(|_| "\\t"))
-        .or(sequence("\\r").map(|_| "\\r"))
-        .or(sequence("\\/").map(|_| "\\/"))
-        .or(sequence("\\f").map(|_| "\\f"))
-        .or(sequence("\\b").map(|_| "\\b"))
+        .or(sequence("\\n").map(|_| "\n"))
+        .or(sequence("\\t").map(|_| "\t"))
+        .or(sequence("\\r").map(|_| "\r"))
+        .or(sequence("\\/").map(|_| "/"))
+        .or(sequence("\\f").map(|_| "\u{000C}"))
+        .or(sequence("\\b").map(|_| "\u{0008}"))
         .parse(input)
 }
 
-pub fn string<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
+pub fn string<'a>(input: &'a str) -> ParseResult<&'a str, String> {
     wrapped(
         sequence("\""),
         none_of("\"\\")
             .or(escaped)
             .many()
-            .map(|vec| vec.into_iter().collect::<String>())
-            .map(JsonValue::String),
+            .map(|vec| vec.into_iter().collect::<String>()),
         sequence("\""),
     )
     .parse(input)
 }
 
 pub fn json_value<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
-    discard(opt(ws()), null.or(boolean).or(string).or(array)).parse(input)
+    discard(
+        ws(),
+        null.or(boolean)
+            .or(array)
+            .or(json_object)
+            .or(string.map(JsonValue::String)),
+    )
+    .parse(input)
 }
 
 pub fn array<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {

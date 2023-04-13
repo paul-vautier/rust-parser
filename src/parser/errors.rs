@@ -9,9 +9,9 @@ pub enum ErrorSource<E: Input> {
 
 #[derive(Debug)]
 pub struct ParserError<E: Input> {
-    index: usize,
-    source: ErrorSource<E>,
-    reason: String,
+    pub index: usize,
+    pub source: ErrorSource<E>,
+    pub reason: String,
 }
 
 impl<E> ParserError<E>

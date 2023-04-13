@@ -1,13 +1,9 @@
-mod parser;
+use crate::parser::json::json_value;
 
-use crate::parser::{
-    impls::sequence,
-    json::{boolean, json_value, null},
-    traits::{sep_by, wrapped, Parser},
-};
+mod parser;
 fn main() {
     println!(
         "{:?}",
-        json_value("[true, false, [false], \" \\\\abcdef\"]")
+        json_value("[true,      false, [false], \" \\\"abcdef\"]")
     );
 }

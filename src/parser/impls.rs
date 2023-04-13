@@ -2,10 +2,10 @@ use std::cmp;
 
 use super::{
     errors::{ErrorSource, ParserError},
-    traits::{And, Discard, Input, Many, Map, Or, ParseResult, Parser, Sep},
+    traits::{opt, And, Discard, Input, Many, Map, Or, ParseResult, Parser, Sep},
 };
 
-impl<'a, I: 'a, P, D, O> Parser<I> for Discard<D, P>
+impl<I, P, D, O> Parser<I> for Discard<D, P>
 where
     P: Parser<I, Output = O>,
     D: Parser<I>,
@@ -19,7 +19,7 @@ where
     }
 }
 
-impl<'a, I: 'a, O1, O2, F, P> Parser<I> for Map<F, P>
+impl<I, O1, O2, F, P> Parser<I> for Map<F, P>
 where
     F: FnMut(O1) -> O2,
     P: Parser<I, Output = O1>,
@@ -31,7 +31,7 @@ where
     }
 }
 
-impl<'a, I: 'a, O: 'a, F> Parser<I> for F
+impl<I, O, F> Parser<I> for F
 where
     F: FnMut(I) -> ParseResult<I, O>,
     I: Input,
@@ -42,13 +42,14 @@ where
     }
 }
 
-impl<'a, I: 'a, P> Parser<I> for Many<P>
+impl<I, P> Parser<I> for Many<P>
 where
     P: Parser<I>,
     I: Input,
 {
     type Output = Vec<P::Output>;
     fn parse(&mut self, input: I) -> ParseResult<I, Vec<P::Output>> {
+        println!("many {}", input.to_string_value());
         if input.input_len() == 0 {
             return Err(ParserError::new(
                 0,
@@ -65,6 +66,7 @@ where
             }
             match self.parser.parse(ipt.clone()) {
                 Ok((i, res)) => {
+                    println!("parsed many {}", ipt.to_string_value());
                     if i.input_len() == ipt.input_len() {
                         break;
                     }
@@ -85,7 +87,7 @@ where
     }
 }
 
-impl<'a, I: 'a, P, S> Parser<I> for Sep<P, S>
+impl<I, P, S> Parser<I> for Sep<P, S>
 where
     P: Parser<I>,
     S: Parser<I>,
@@ -96,9 +98,9 @@ where
         let mut ans: Vec<P::Output> = vec![];
         let mut i = input;
         loop {
-            if let Ok((ipt, res)) = self.parser.parse(i.clone()) {
+            if let Ok((next, res)) = self.parser.parse(i.clone()) {
                 ans.push(res);
-                i = ipt;
+                i = next;
             } else {
                 break;
             }
@@ -112,7 +114,7 @@ where
     }
 }
 
-impl<'a, I: 'a, F, S> Parser<I> for And<F, S>
+impl<I, F, S> Parser<I> for And<F, S>
 where
     F: Parser<I>,
     S: Parser<I>,
@@ -126,7 +128,7 @@ where
     }
 }
 
-impl<'a, I: 'a, O, F, S> Parser<I> for Or<F, S>
+impl<I, O, F, S> Parser<I> for Or<F, S>
 where
     F: Parser<I, Output = O>,
     S: Parser<I, Output = O>,
@@ -142,6 +144,7 @@ where
 
 pub fn sequence<'a>(matcher: &'a str) -> impl Parser<&'a str, Output = &'a str> {
     move |input: &'a str| {
+        println!("attempting to parse {} for {}", matcher, input);
         if input.is_empty() {
             return Err(ParserError::new(
                 0,
@@ -158,7 +161,7 @@ pub fn sequence<'a>(matcher: &'a str) -> impl Parser<&'a str, Output = &'a str> 
                 position,
                 ErrorSource::Sequence(matcher),
                 format!(
-                    "could not parse sequence ' {} '",
+                    "could not parse sequence '{}'",
                     &input[position..cmp::min(position + 10, input.len())]
                 )
                 .as_str(),
@@ -185,6 +188,14 @@ where
         }
         match input.chars().position(|c| !(predicate)(c)) {
             Some(position) => {
+                if position == 0 {
+                    return Err(ParserError::new(
+                        0,
+                        ErrorSource::TakeWhile,
+                        format!("could not parse for char {}", &input[0..1]).as_str(),
+                    ));
+                }
+
                 let (parsed, remainder) = input.split_at(position);
                 return Ok((remainder, parsed));
             }
@@ -203,6 +214,6 @@ pub fn any<'a>(chars: &'a str) -> impl Parser<&'a str, Output = &'a str> {
     take_while(|c| chars.contains(c))
 }
 
-pub fn ws<'a>() -> impl Parser<&'a str, Output = &'a str> {
-    take_while(char::is_whitespace)
+pub fn ws<'a>() -> impl Parser<&'a str, Output = Option<&'a str>> {
+    opt(take_while(char::is_whitespace))
 }
