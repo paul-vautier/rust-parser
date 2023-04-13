@@ -60,6 +60,34 @@ pub trait Parser<I: Input> {
     fn parse(&mut self, input: I) -> ParseResult<I, Self::Output>;
 }
 
+trait FlattenTuple {
+    type Output;
+    fn into_flattened(self) -> Self::Output;
+}
+
+impl<A, B, C> FlattenTuple for ((A, B), C) {
+    type Output = (A, B, C);
+
+    fn into_flattened(self) -> Self::Output {
+        ((self.0).0, (self.0).1, self.1)
+    }
+}
+
+pub fn parse_if<I, O, C, P>(
+    mut cond: C,
+    mut parser: P,
+) -> impl FnMut(I) -> ParseResult<I, Option<O>>
+where
+    I: Input,
+    C: Parser<I>,
+    P: Parser<I, Output = O>,
+{
+    move |ipt| match cond.parse(ipt.clone()) {
+        Ok((i, _)) => parser.parse(i).map(|(i, r)| (i, Some(r))),
+        Err(_) => Ok((ipt, None)),
+    }
+}
+
 pub fn sep_by<'a, I, O, P, S>(parser: P, separator: S) -> Sep<P, S>
 where
     I: Input,

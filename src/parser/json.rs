@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use super::{
-    impls::{any, none_of, sequence, ws},
-    traits::{discard, opt, sep_by, wrapped, ParseResult, Parser},
+    impls::{none_of, sequence, take_while, ws},
+    traits::{discard, opt, parse_if, sep_by, wrapped, ParseResult, Parser},
 };
 
 #[derive(Debug)]
@@ -16,11 +16,15 @@ pub enum JsonValue {
 }
 
 pub fn json_object<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
-    wrapped(sequence("{"), json_pair.many(), sequence("}"))
-        .map(Vec::into_iter)
-        .map(Iterator::collect::<HashMap<String, JsonValue>>)
-        .map(JsonValue::Object)
-        .parse(input)
+    wrapped(
+        sequence("{"),
+        sep_by(json_pair, sequence(",")),
+        sequence("}"),
+    )
+    .map(Vec::into_iter)
+    .map(Iterator::collect::<HashMap<String, JsonValue>>)
+    .map(JsonValue::Object)
+    .parse(input)
 }
 
 pub fn json_pair<'a>(input: &'a str) -> ParseResult<&'a str, (String, JsonValue)> {
@@ -86,4 +90,25 @@ pub fn boolean<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
         .or(sequence("false"))
         .map(|str_bool| JsonValue::Boolean(str_bool == "true"))
         .parse(input)
+}
+
+pub fn json_number<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
+    opt(sequence("-"))
+        .map(|opt| if opt.is_some() { -1 } else { 1 })
+        .and(
+            sequence("0")
+                .or(digits)
+                .map(str::parse::<u32>)
+                .map(Result::unwrap),
+        )
+        .and(
+            parse_if(sequence("."), digits)
+                .map(|opt| opt.map(str::parse::<u32>).map(Result::unwrap).unwrap_or(0)),
+        )
+        .map(|_| JsonValue::Null)
+        .parse(input)
+}
+
+pub fn digits<'a>(input: &'a str) -> ParseResult<&'a str, &'a str> {
+    take_while(|c| c.is_digit(10)).parse(input)
 }

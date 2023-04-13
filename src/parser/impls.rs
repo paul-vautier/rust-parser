@@ -1,4 +1,4 @@
-use std::cmp;
+use std::{cmp, process::Output};
 
 use super::{
     errors::{ErrorSource, ParserError},
@@ -208,6 +208,10 @@ where
 
 pub fn none_of<'a>(chars: &'a str) -> impl Parser<&'a str, Output = &'a str> {
     take_while(|c| !chars.contains(c))
+}
+
+pub fn not<'a>(chr: char) -> impl Parser<&'a str, Output = &'a str> {
+    take_while(move |c| chr != c)
 }
 
 pub fn any<'a>(chars: &'a str) -> impl Parser<&'a str, Output = &'a str> {
