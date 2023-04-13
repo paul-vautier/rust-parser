@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, iter::Flatten};
 
 use super::{
     impls::{none_of, sequence, take_while, ws},
-    traits::{discard, opt, parse_if, sep_by, wrapped, ParseResult, Parser},
+    traits::{discard, opt, parse_if, sep_by, wrapped, FlattenTuple, ParseResult, Parser},
 };
 
 #[derive(Debug)]
@@ -101,10 +101,12 @@ pub fn json_number<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
                 .map(str::parse::<u32>)
                 .map(Result::unwrap),
         )
-        .and(
-            parse_if(sequence("."), digits)
-                .map(|opt| opt.map(str::parse::<u32>).map(Result::unwrap).unwrap_or(0)),
-        )
+        .and(parse_if(sequence("."), digits).map(|opt| {
+            opt.map(|double_str| format!("0.{}", double_str).parse::<f32>())
+                .map(Result::unwrap)
+                .unwrap_or(0.0)
+        }))
+        .map(FlattenTuple::into_flattened)
         .map(|_| JsonValue::Null)
         .parse(input)
 }

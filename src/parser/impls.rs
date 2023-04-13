@@ -1,4 +1,4 @@
-use std::{cmp, process::Output};
+use std::cmp;
 
 use super::{
     errors::{ErrorSource, ParserError},

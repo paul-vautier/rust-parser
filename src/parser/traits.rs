@@ -60,7 +60,7 @@ pub trait Parser<I: Input> {
     fn parse(&mut self, input: I) -> ParseResult<I, Self::Output>;
 }
 
-trait FlattenTuple {
+pub trait FlattenTuple {
     type Output;
     fn into_flattened(self) -> Self::Output;
 }
