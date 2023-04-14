@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use json_parser::parser::{
+use pepser::parser::{
     impls::{any, none_of, sequence, take_while, ws},
     traits::{discard, opt, parse_if, sep_by, value, wrapped, ParseResult, Parser},
 };

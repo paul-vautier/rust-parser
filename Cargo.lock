@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "json-parser"
+name = "pepser"
 version = "0.1.0"
