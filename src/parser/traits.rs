@@ -1,3 +1,5 @@
+use std::process::Output;
+
 use super::errors::ParserError;
 
 pub type ParseResult<I, O> = Result<(I, O), ParserError<I>>;

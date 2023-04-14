@@ -1,8 +1,8 @@
-use std::{collections::HashMap, iter::Flatten};
+use std::collections::HashMap;
 
-use super::{
+use json_parser::parser::{
     impls::{any, none_of, sequence, take_while, ws},
-    traits::{discard, opt, parse_if, sep_by, value, wrapped, FlattenTuple, ParseResult, Parser},
+    traits::{discard, opt, parse_if, sep_by, value, wrapped, ParseResult, Parser},
 };
 
 #[derive(Debug)]
@@ -136,4 +136,29 @@ fn exponent<'a>(input: &'a str) -> ParseResult<&'a str, i32> {
 }
 pub fn digits<'a>(input: &'a str) -> ParseResult<&'a str, &'a str> {
     take_while(|c| c.is_digit(10)).parse(input)
+}
+
+#[test]
+fn parse_object() {
+    println!(
+        "{:?}",
+        json_value(
+            "    {
+            \"description\": \"the description of the test case\",
+            \"schema\": {\"the schema that should\" : \"be validated against\"},
+            \"tests\": [
+                {
+                    \"description\": \"a specific test of a valid instance\",
+                    \"data\": \"the instance\",
+                    \"valid\": true
+                },
+                {
+                    \"description\": \"another specific test this time, invalid\",
+                    \"data\": -15.3E2,
+                    \"valid\": false
+                }
+            ]
+        }"
+        )
+    );
 }
