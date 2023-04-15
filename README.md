@@ -4,6 +4,12 @@ This library is a personal project inspired from [Tsoding's video on combinatory
 
 The base `Parser` trait has been modified after reading [Nom's library's implementation](https://github.com/rust-bakery/nom) of the `Parser` trait, since it was more comfortable to use and fairly more just (They used both generics and associated types, I only used generics).
 
+## Installation
+
+The library is not available anywhere else than on github, you may use it are your own risk by adding this dependency in your `Cargo.toml` file
+
+`pepser = { git = 'https://github.com/paul-vautier/rust-parser.git'}`
+
 ## Example 
 
 Implementation of a JSON parser using the library
