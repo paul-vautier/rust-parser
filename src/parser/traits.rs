@@ -1,4 +1,4 @@
-use super::{errors::ParserError, impls::sequence};
+use super::errors::ParserError;
 
 pub type ParseResult<I, O> = Result<(I, O), ParserError<I>>;
 
