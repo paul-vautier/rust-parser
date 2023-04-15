@@ -28,8 +28,9 @@ pub trait Parser<I: Input> {
     /// # Examples
     /// ```rust
     ///
-    /// use super::impls::sequence;
-    /// let mut parser = sequence("abc").and("def");
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("abc").and(sequence("def"));
     ///
     /// assert_eq!(parser.parse("abcdefg"), Ok(("g", ("abc", "def"))));
     /// assert_eq!(parser.parse("abcdef"), Ok(("", ("abc", "def"))));
@@ -55,8 +56,9 @@ pub trait Parser<I: Input> {
     /// # Examples
     /// ```rust
     ///
-    /// use super::impls::sequence;
-    /// let mut parser = sequence("abc").or("def");
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("abc").or(sequence("def"));
     ///
     /// assert_eq!(parser.parse("abcdef"), Ok(("def", "abc")));
     /// assert_eq!(parser.parse("defabc"), Ok(("abc", "def")));
@@ -81,8 +83,9 @@ pub trait Parser<I: Input> {
     /// # Examples
     /// ```rust
     ///
-    /// use super::impls::sequence;
-    /// let mut parser = sequence("123").map(str::parse::<u32>).map(Result::unwrap()).map(|v| v * 2);
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("123").map(str::parse::<u32>).map(Result::unwrap).map(|v| v * 2);
     ///
     /// assert_eq!(parser.parse("123"), Ok(("", 246)));
     ///
@@ -102,12 +105,13 @@ pub trait Parser<I: Input> {
     /// # Examples
     /// ```rust
     ///
-    /// use super::impls::sequence;
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
     /// let mut parser = sequence("123").many();
     ///
-    /// assert_eq!(parser.parse("123123123123"), Ok(("", "123123123123")));
-    /// assert_eq!(parser.parse("123"), Ok(("", "123")));
-    /// assert_eq!(parser.parse("1231234"), Ok(("4", "123123")));
+    /// assert_eq!(parser.parse("123123123123"), Ok(("", vec!["123", "123", "123", "123"])));
+    /// assert_eq!(parser.parse("123"), Ok(("", vec!["123"])));
+    /// assert_eq!(parser.parse("1231234"), Ok(("4", vec!["123","123"])));
     /// assert_eq!(parser.parse("").is_err(), true);
     ///
     ///
