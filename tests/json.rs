@@ -5,7 +5,7 @@ use pepser::parser::{
     traits::{discard, opt, parse_if, sep_by, value, wrapped, ParseResult, Parser},
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum JsonValue {
     Array(Vec<JsonValue>),
     Boolean(bool),
@@ -140,8 +140,63 @@ pub fn digits<'a>(input: &'a str) -> ParseResult<&'a str, &'a str> {
 
 #[test]
 fn parse_object() {
-    println!(
-        "{:?}",
+    use JsonValue::*;
+    assert_eq!(
+        Ok((
+            "",
+            Object(
+                vec![
+                    (
+                        "description".to_string(),
+                        String("the description of the test case".to_string())
+                    ),
+                    (
+                        "schema".to_string(),
+                        Object(
+                            vec![(
+                                "the schema that should".to_string(),
+                                String("be validated against".to_string())
+                            )]
+                            .into_iter()
+                            .collect()
+                        )
+                    ),
+                    (
+                        "tests".to_string(),
+                        Array(vec![
+                            Object(
+                                vec![
+                                    (
+                                        "description".to_string(),
+                                        String("a specific test of a valid instance".to_string())
+                                    ),
+                                    ("data".to_string(), String("the instance".to_string())),
+                                    ("valid".to_string(), Boolean(true))
+                                ]
+                                .into_iter()
+                                .collect()
+                            ),
+                            Object(
+                                vec![
+                                    (
+                                        "description".to_string(),
+                                        String(
+                                            "another specific test this time, invalid".to_string()
+                                        )
+                                    ),
+                                    ("data".to_string(), Number(-15.0)),
+                                    ("valid".to_string(), Boolean(false))
+                                ]
+                                .into_iter()
+                                .collect()
+                            )
+                        ])
+                    )
+                ]
+                .into_iter()
+                .collect()
+            )
+        )),
         json_value(
             "    {
             \"description\": \"the description of the test case\",
@@ -154,7 +209,7 @@ fn parse_object() {
                 },
                 {
                     \"description\": \"another specific test this time, invalid\",
-                    \"data\": -15.3E2,
+                    \"data\": -15,
                     \"valid\": false
                 }
             ]
