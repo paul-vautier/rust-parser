@@ -197,7 +197,7 @@ where
                 return Ok((remainder, parsed));
             }
             None => {
-                return Ok((input, ""));
+                return Ok(("", input));
             }
         };
     }
