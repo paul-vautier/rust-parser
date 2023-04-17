@@ -1,5 +1,3 @@
-use std::process::Output;
-
 use super::errors::ParserError;
 
 pub type ParseResult<I, O> = Result<(I, O), ParserError<I>>;
@@ -20,9 +18,27 @@ impl Input for &str {
     }
 }
 
+/// Combinatory parser trait
+/// All parsers must implement this trait
 pub trait Parser<I: Input> {
     type Output;
 
+    /// Chains two parsers to return their output in a tuple
+    ///  
+    /// # Examples
+    /// ```rust
+    ///
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("abc").and(sequence("def"));
+    ///
+    /// assert_eq!(parser.parse("abcdefg"), Ok(("g", ("abc", "def"))));
+    /// assert_eq!(parser.parse("abcdef"), Ok(("", ("abc", "def"))));
+    /// assert_eq!(parser.parse("").is_err(), true);
+    /// assert_eq!(parser.parse("defabc").is_err(), true);
+    ///
+    ///
+    /// ```
     fn and<G>(self, parser: G) -> And<Self, G>
     where
         G: Parser<I>,
@@ -34,6 +50,23 @@ pub trait Parser<I: Input> {
         }
     }
 
+    /// Chains a second parser to be tested if the first one fails.
+    /// Returns an error if both parsers fail
+    ///  
+    /// # Examples
+    /// ```rust
+    ///
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("abc").or(sequence("def"));
+    ///
+    /// assert_eq!(parser.parse("abcdef"), Ok(("def", "abc")));
+    /// assert_eq!(parser.parse("defabc"), Ok(("abc", "def")));
+    /// assert_eq!(parser.parse("").is_err(), true);
+    /// assert_eq!(parser.parse("123").is_err(), true);
+    ///
+    ///
+    /// ```
     fn or<G>(self, parser: G) -> Or<Self, G>
     where
         G: Parser<I>,
@@ -45,6 +78,19 @@ pub trait Parser<I: Input> {
         }
     }
 
+    /// Applies a function to be applied to the output of the parser
+    ///  
+    /// # Examples
+    /// ```rust
+    ///
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("123").map(str::parse::<u32>).map(Result::unwrap).map(|v| v * 2);
+    ///
+    /// assert_eq!(parser.parse("123"), Ok(("", 246)));
+    ///
+    ///
+    /// ```
     fn map<F, O>(self, f: F) -> Map<F, Self>
     where
         F: Fn(Self::Output) -> O,
@@ -53,6 +99,23 @@ pub trait Parser<I: Input> {
         Map { f, parser: self }
     }
 
+    /// Retries a parser until it fails.
+    /// Returns an error if the parser fails on the first time
+    ///
+    /// # Examples
+    /// ```rust
+    ///
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("123").many();
+    ///
+    /// assert_eq!(parser.parse("123123123123"), Ok(("", vec!["123", "123", "123", "123"])));
+    /// assert_eq!(parser.parse("123"), Ok(("", vec!["123"])));
+    /// assert_eq!(parser.parse("1231234"), Ok(("4", vec!["123","123"])));
+    /// assert_eq!(parser.parse("").is_err(), true);
+    ///
+    ///
+    /// ```
     fn many(self) -> Many<Self>
     where
         Self: Sized,

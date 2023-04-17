@@ -1,6 +1,23 @@
+# Combinatory parser library
+
+This library is a personal project inspired from [Tsoding's video on combinatory parsers](https://youtu.be/N9RUqGYuGfw). 
+
+The base `Parser` trait has been modified after reading [Nom's library's implementation](https://github.com/rust-bakery/nom) of the `Parser` trait, since it was more comfortable to use and fairly more just (They used both generics and associated types, I only used generics).
+
+## Installation
+
+The library is not available anywhere else than on github, you may use it are your own risk by adding this dependency in your `Cargo.toml` file
+
+`pepser = { git = 'https://github.com/paul-vautier/rust-parser.git'}`
+
+## Example 
+
+Implementation of a JSON parser using the library
+
+```rust
 use std::collections::HashMap;
 
-use pepser::{
+use pepser::parser::{
     impls::{any, none_of, sequence, take_while, ws},
     traits::{discard, opt, parse_if, sep_by, value, wrapped, ParseResult, Parser},
 };
@@ -217,3 +234,11 @@ fn parse_object() {
         )
     );
 }
+
+```
+
+## Use case 
+
+This library is not really meant to be used by someone else than me. It is only a fun experiment to discover combinatory parsers, and it will be slowly be completed with time as it will be the core parser for my own programming language.
+
+Right now, it only supports string parsing, but I may implement ways to parse other streams.

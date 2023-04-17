@@ -1,13 +1,13 @@
 use super::traits::Input;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ErrorSource<E: Input> {
     Many,
     Sequence(E),
     TakeWhile,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ParserError<E: Input> {
     pub index: usize,
     pub source: ErrorSource<E>,
