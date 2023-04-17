@@ -1,2 +1,2 @@
 mod parser;
-pub use parser::*;
+pub use self::parser::*;
