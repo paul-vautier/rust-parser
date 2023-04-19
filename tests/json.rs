@@ -34,7 +34,8 @@ pub fn json_pair<'a>(input: &'a str) -> ParseResult<&'a str, (String, JsonValue)
             .map(String::from)
             .and(discard(wrapped(ws(), sequence(":"), ws()), json_value)),
         ws(),
-    )(input)
+    )
+    .parse(input)
 }
 
 pub fn null<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
@@ -83,7 +84,8 @@ pub fn array<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {
         sequence("["),
         wrapped(ws(), sep_by(json_value, sequence(",")), ws()).map(JsonValue::Array),
         sequence("]"),
-    )(input)
+    )
+    .parse(input)
 }
 
 pub fn boolean<'a>(input: &'a str) -> ParseResult<&'a str, JsonValue> {

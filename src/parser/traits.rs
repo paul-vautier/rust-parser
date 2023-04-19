@@ -167,7 +167,7 @@ pub fn wrapped<I, O, L, P, R>(
     mut left: L,
     mut parser: P,
     mut right: R,
-) -> impl FnMut(I) -> ParseResult<I, O>
+) -> impl Parser<I, Output = O>
 where
     L: Parser<I>,
     P: Parser<I, Output = O>,
@@ -182,7 +182,7 @@ where
     }
 }
 
-pub fn opt<I, O, F>(mut f: F) -> impl FnMut(I) -> ParseResult<I, Option<O>>
+pub fn opt<I, O, F>(mut f: F) -> impl Parser<I, Output = Option<O>>
 where
     I: Input,
     F: Parser<I, Output = O>,
@@ -196,7 +196,7 @@ where
     }
 }
 
-pub fn value<V: Clone, I, O, F>(v: V, mut f: F) -> impl FnMut(I) -> ParseResult<I, V>
+pub fn value<V: Clone, I, O, F>(v: V, mut f: F) -> impl Parser<I, Output = V>
 where
     I: Input,
     F: Parser<I, Output = O>,
