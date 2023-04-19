@@ -42,6 +42,16 @@ where
     }
 }
 
+impl<I, O> Parser<I> for Box<dyn Parser<I, Output = O>>
+where
+    I: Input,
+{
+    type Output = O;
+    fn parse(&mut self, input: I) -> ParseResult<I, O> {
+        (**self).parse(input)
+    }
+}
+
 impl<I, P> Parser<I> for Many<P>
 where
     P: Parser<I>,
