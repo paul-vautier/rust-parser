@@ -59,14 +59,6 @@ where
 {
     type Output = Vec<P::Output>;
     fn parse(&mut self, input: I) -> ParseResult<I, Vec<P::Output>> {
-        if input.input_len() == 0 {
-            return Err(ParserError::new(
-                0,
-                ErrorSource::Many,
-                "many cannot parse empty inputs",
-            ));
-        }
-
         let mut parsed: Vec<P::Output> = vec![];
         let mut ipt = input;
         loop {
