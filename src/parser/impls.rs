@@ -73,12 +73,8 @@ where
                     ipt = i;
                     parsed.push(res);
                 }
-                Err(e) => {
-                    if parsed.is_empty() {
-                        return Err(e);
-                    } else {
-                        break;
-                    }
+                Err(_) => {
+                    break;
                 }
             }
         }
