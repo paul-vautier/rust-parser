@@ -169,9 +169,9 @@ pub fn sequence<'a>(matcher: &'a str) -> impl Parser<&'a str, Output = &'a str> 
     }
 }
 
-pub fn take_while<'a, P>(predicate: P) -> impl Parser<&'a str, Output = &'a str>
+pub fn take_while<'a, P>(mut predicate: P) -> impl Parser<&'a str, Output = &'a str>
 where
-    P: Fn(char) -> bool,
+    P: FnMut(char) -> bool,
 {
     move |input: &'a str| {
         if input.is_empty() {
