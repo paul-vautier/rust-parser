@@ -145,6 +145,7 @@ where
     type Output = S::Output;
     fn parse(&mut self, input: I) -> ParseResult<I, S::Output> {
         let mut offset = 0;
+        println!("{}", input.to_string_value());
         loop {
             if input.input_len() == 0 {
                 return Err(ParserError::new(
