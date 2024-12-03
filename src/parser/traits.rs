@@ -6,6 +6,12 @@ pub trait Input: Clone {
     fn to_string_value(&self) -> String;
 
     fn input_len(&self) -> usize;
+
+    fn drop(&self, size: usize) -> Self;
+
+    fn take(&self, size: usize) -> Self;
+
+    fn split_at(&self, size: usize) -> (Self, Self);
 }
 
 impl Input for &str {
@@ -15,6 +21,18 @@ impl Input for &str {
 
     fn input_len(&self) -> usize {
         self.len()
+    }
+
+    fn drop(&self, size: usize) -> Self {
+        &self[size..]
+    }
+
+    fn take(&self, size: usize) -> Self {
+        &self[..size]
+    }
+
+    fn split_at(&self, size: usize) -> (Self, Self) {
+        str::split_at(self, size)
     }
 }
 
@@ -126,19 +144,6 @@ pub trait Parser<I: Input> {
     fn parse(&mut self, input: I) -> ParseResult<I, Self::Output>;
 }
 
-pub trait FlattenTuple {
-    type Output;
-    fn into_flattened(self) -> Self::Output;
-}
-
-impl<A, B, C> FlattenTuple for ((A, B), C) {
-    type Output = (A, B, C);
-
-    fn into_flattened(self) -> Self::Output {
-        ((self.0).0, (self.0).1, self.1)
-    }
-}
-
 pub fn parse_if<I, O, C, P>(
     mut cond: C,
     mut parser: P,
@@ -213,6 +218,14 @@ where
     Discard { discard, parser }
 }
 
+fn drop_until<P, I>(until: P) -> DropUntil<P>
+where
+    P: Parser<I>,
+    I: Input,
+{
+    DropUntil { until }
+}
+
 pub struct Many<P> {
     pub(crate) parser: P,
 }
@@ -235,6 +248,10 @@ pub struct Or<F, S> {
 pub struct Map<F, P> {
     pub(crate) f: F,
     pub(crate) parser: P,
+}
+
+pub struct DropUntil<U> {
+    pub(crate) until: U,
 }
 
 pub struct Discard<D, P> {

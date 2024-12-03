@@ -1,8 +1,8 @@
-use std::cmp;
+use std::{cmp, process::Output};
 
 use super::{
     errors::{ErrorSource, ParserError},
-    traits::{opt, And, Discard, Input, Many, Map, Or, ParseResult, Parser, Sep},
+    traits::{opt, And, Discard, DropUntil, Input, Many, Map, Or, ParseResult, Parser, Sep},
 };
 
 impl<I, P, D, O> Parser<I> for Discard<D, P>
@@ -135,6 +135,29 @@ where
         self.first.parse(input.clone()).or_else(|_| {
             return self.second.parse(input);
         })
+    }
+}
+impl<I, S> Parser<I> for DropUntil<S>
+where
+    S: Parser<I>,
+    I: Input,
+{
+    type Output = S::Output;
+    fn parse(&mut self, input: I) -> ParseResult<I, S::Output> {
+        let mut offset = 0;
+        loop {
+            if input.input_len() == 0 {
+                return Err(ParserError::new(
+                    0,
+                    ErrorSource::DropUntil,
+                    "could not find any match for drop until",
+                ));
+            }
+            match self.until.parse(input.drop(offset)) {
+                Ok(res) => return Ok(res),
+                Err(_) => offset += 1,
+            }
+        }
     }
 }
 
