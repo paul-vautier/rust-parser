@@ -5,6 +5,7 @@ pub enum ErrorSource<E: Input> {
     Many,
     Sequence(E),
     TakeWhile,
+    EOF,
     DropUntil,
 }
 

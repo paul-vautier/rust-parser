@@ -192,6 +192,25 @@ pub fn sequence<'a>(matcher: &'a str) -> impl Parser<&'a str, Output = &'a str> 
     }
 }
 
+pub fn eof<I>() -> impl Parser<I, Output = ()>
+where
+    I: Input,
+{
+    move |input: I| {
+        if input.input_len() == 0 {
+            return Ok((input, ()));
+        } else {
+            let mut error_message = String::from("input is not empty");
+            error_message.push_str(input.to_string_value().as_str());
+            return Err(ParserError::new(
+                0,
+                ErrorSource::EOF,
+                error_message.as_str(),
+            ));
+        }
+    }
+}
+
 pub fn take_while<'a, P>(mut predicate: P) -> impl Parser<&'a str, Output = &'a str>
 where
     P: FnMut(char) -> bool,
