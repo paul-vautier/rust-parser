@@ -218,7 +218,7 @@ where
     Discard { discard, parser }
 }
 
-fn drop_until<P, I>(until: P) -> DropUntil<P>
+pub fn drop_until<P, I>(until: P) -> DropUntil<P>
 where
     P: Parser<I>,
     I: Input,
