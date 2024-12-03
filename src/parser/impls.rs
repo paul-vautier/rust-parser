@@ -1,4 +1,4 @@
-use std::{cmp, process::Output};
+use std::cmp;
 
 use super::{
     errors::{ErrorSource, ParserError},
@@ -146,7 +146,7 @@ where
     fn parse(&mut self, input: I) -> ParseResult<I, S::Output> {
         let mut offset = 0;
         loop {
-            if input.input_len() <= offset {
+            if input.input_len() < offset {
                 return Err(ParserError::new(
                     0,
                     ErrorSource::DropUntil,
