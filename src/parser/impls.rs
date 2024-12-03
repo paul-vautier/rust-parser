@@ -33,14 +33,14 @@ where
     }
 }
 
-impl<I, O, F, P> Parser<I> for Peek<F, P>
+impl<I, F, P> Parser<I> for Peek<F, P>
 where
     F: FnMut(&I) -> (),
-    P: Parser<I, Output = O>,
+    P: Parser<I>,
     I: Input,
 {
-    type Output = O;
-    fn parse(&mut self, input: I) -> ParseResult<I, O> {
+    type Output = P::Output;
+    fn parse(&mut self, input: I) -> ParseResult<I, P::Output> {
         (self.f)(&input);
         self.parser.parse(input)
     }
@@ -52,8 +52,8 @@ where
     P: Parser<I, Output = O>,
     I: Input,
 {
-    type Output = O;
-    fn parse(&mut self, input: I) -> ParseResult<I, O> {
+    type Output = P::Output;
+    fn parse(&mut self, input: I) -> ParseResult<I, P::Output> {
         let res = self.parser.parse(input);
         (self.f)(&res);
         return res;
