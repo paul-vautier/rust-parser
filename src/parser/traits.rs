@@ -132,7 +132,7 @@ pub trait Parser<I: Input> {
     /// ```
     fn peek_in<F>(self, f: F) -> Peek<F, Self>
     where
-        F: Fn(I) -> (),
+        F: FnMut(&I) -> (),
         Self: Sized,
     {
         Peek { f, parser: self }
@@ -153,7 +153,7 @@ pub trait Parser<I: Input> {
     /// ```
     fn peek_out<F>(self, f: F) -> PeekOut<F, Self>
     where
-        F: Fn(Self::Output) -> (),
+        F: FnMut(&ParseResult<I, Self::Output>) -> (),
         Self: Sized,
     {
         PeekOut { f, parser: self }
