@@ -2,7 +2,9 @@ use std::cmp;
 
 use super::{
     errors::{ErrorSource, ParserError},
-    traits::{opt, And, Discard, DropUntil, Input, Many, Map, Or, ParseResult, Parser, Sep},
+    traits::{
+        opt, And, Discard, DropUntil, Input, Many, Map, Or, ParseResult, Parser, Peek, PeekOut, Sep,
+    },
 };
 
 impl<I, P, D, O> Parser<I> for Discard<D, P>
@@ -28,6 +30,33 @@ where
     type Output = O2;
     fn parse(&mut self, input: I) -> ParseResult<I, O2> {
         self.parser.parse(input).map(|(i, res)| (i, (self.f)(res)))
+    }
+}
+
+impl<I, O, F, P> Parser<I> for Peek<F, P>
+where
+    F: FnMut(&I) -> (),
+    P: Parser<I, Output = O>,
+    I: Input,
+{
+    type Output = O;
+    fn parse(&mut self, input: I) -> ParseResult<I, O> {
+        (self.f)(&input);
+        self.parser.parse(input)
+    }
+}
+
+impl<I, O, F, P> Parser<I> for PeekOut<F, P>
+where
+    F: FnMut(&ParseResult<I, O>) -> (),
+    P: Parser<I, Output = O>,
+    I: Input,
+{
+    type Output = O;
+    fn parse(&mut self, input: I) -> ParseResult<I, O> {
+        let res = self.parser.parse(input);
+        (self.f)(&res);
+        return res;
     }
 }
 

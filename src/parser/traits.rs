@@ -117,6 +117,48 @@ pub trait Parser<I: Input> {
         Map { f, parser: self }
     }
 
+    /// Applies a peeking function on the input
+    ///  
+    /// # Examples
+    /// ```rust
+    ///
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("123").map(str::parse::<u32>).map(Result::unwrap).map(|v| v * 2);
+    ///
+    /// assert_eq!(parser.parse("123"), Ok(("", 246)));
+    ///
+    ///
+    /// ```
+    fn peek_in<F>(self, f: F) -> Peek<F, Self>
+    where
+        F: Fn(I) -> (),
+        Self: Sized,
+    {
+        Peek { f, parser: self }
+    }
+
+    /// Applies a peeking function on the input
+    ///  
+    /// # Examples
+    /// ```rust
+    ///
+    /// use pepser::parser::impls::sequence;
+    /// use pepser::parser::traits::Parser;
+    /// let mut parser = sequence("123").map(str::parse::<u32>).map(Result::unwrap).map(|v| v * 2);
+    ///
+    /// assert_eq!(parser.parse("123"), Ok(("", 246)));
+    ///
+    ///
+    /// ```
+    fn peek_out<F>(self, f: F) -> PeekOut<F, Self>
+    where
+        F: Fn(Self::Output) -> (),
+        Self: Sized,
+    {
+        PeekOut { f, parser: self }
+    }
+
     /// Retries a parser until it fails.
     /// Returns an error if the parser fails on the first time
     ///
@@ -256,5 +298,15 @@ pub struct DropUntil<U> {
 
 pub struct Discard<D, P> {
     pub(crate) discard: D,
+    pub(crate) parser: P,
+}
+
+pub struct Peek<F, P> {
+    pub(crate) f: F,
+    pub(crate) parser: P,
+}
+
+pub struct PeekOut<F, P> {
+    pub(crate) f: F,
     pub(crate) parser: P,
 }
